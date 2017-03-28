@@ -25,6 +25,7 @@ public class WorkoutActivity extends AppCompatActivity implements OnClickListene
     public int day;
     public int year;
     public int dateSort;
+    public int index;
     public String monthString;
     public String dayString;
     public String yearString;
@@ -32,7 +33,7 @@ public class WorkoutActivity extends AppCompatActivity implements OnClickListene
     public String workout;
     public int weight;
     public String reps;
-    public String indexString;
+
 
     public int strLength;
     public boolean tooLong;
@@ -67,6 +68,14 @@ public class WorkoutActivity extends AppCompatActivity implements OnClickListene
 
         MyDatabase db = new MyDatabase(this);
         workoutBase = db.getWritableDatabase();
+        Cursor c = workoutBase.rawQuery("SELECT * FROM records", null);
+        if(c!=null && c.getCount()>0){
+            c.moveToLast();
+            index = c.getInt(c.getColumnIndex("id"));
+        }
+        else{
+            index = 0;
+        }
 
 
 
@@ -75,13 +84,14 @@ public class WorkoutActivity extends AppCompatActivity implements OnClickListene
 
     }
 
-    public void updateDB(int yr, int mo, int dy, String dt, String wrk, int wght, String rps, int dtsrt){
+    public void updateDB(int id, int yr, int mo, int dy, String dt, String wrk, int wght, String rps, int dtsrt){
 
 
 
 
 
         ContentValues insertValues = new ContentValues();
+        insertValues.put("id", id);
         insertValues.put("year", yr);
         insertValues.put("month", mo);
         insertValues.put("day", dy);
@@ -160,8 +170,8 @@ public class WorkoutActivity extends AppCompatActivity implements OnClickListene
 
             //checks to make sure entries aren't too long before updating the db
             if(tooLong == false) {
-
-                updateDB(year, monthNum, day, dateString, workout, weight, reps, dateSort);
+                index++;
+                updateDB(index, year, monthNum, day, dateString, workout, weight, reps, dateSort);
 
 
                 CharSequence text = "Workout saved!";
