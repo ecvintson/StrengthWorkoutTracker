@@ -1,6 +1,4 @@
 //to do:
-//      implement default workouts sorted by date
-//      add delete button function, delete a specific row
 //      create personal library of sqlite functions from functions implemented here
 
 package com.example.evan.strengthworkouttracker;
@@ -9,12 +7,15 @@ import android.content.ContentValues;
 import android.content.DialogInterface;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.support.annotation.IntegerRes;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.InputType;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
@@ -23,9 +24,10 @@ public class ReviewActivity extends AppCompatActivity implements View.OnClickLis
 
     public SQLiteDatabase workoutBase;
     public String entry;
+    public int cIndex;
+    public int index;
     public int indexCounter;
     public boolean looper = true;
-    public boolean tableFirstCreate = true;
 
 
     public Button weightSortButton;
@@ -82,8 +84,8 @@ public class ReviewActivity extends AppCompatActivity implements View.OnClickLis
 
 
 
-        //if the headers haven't been created yet, this creates them
-        if(tableFirstCreate){
+        //creates the headers
+
             TableRow frow = new TableRow(this);
             TextView ft1 = new TextView(this);
             TextView ft2 = new TextView(this);
@@ -102,8 +104,8 @@ public class ReviewActivity extends AppCompatActivity implements View.OnClickLis
             frow.addView(ft4);
             frow.addView(ft5);
             table.addView(frow, new TableLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-            tableFirstCreate = false;
-        }
+
+
 
 
         //create 4 textviews, one for each column
@@ -160,7 +162,6 @@ public class ReviewActivity extends AppCompatActivity implements View.OnClickLis
         workoutBase.execSQL("DELETE FROM tempsort"); //empties tempsort from any previous uses
         workoutBase.execSQL("INSERT INTO tempsort SELECT * FROM records"); //copies the contents of records table into tempsort
 
-        tableFirstCreate=true;
         loadActivity("datesort");
     }
 
@@ -173,9 +174,53 @@ public class ReviewActivity extends AppCompatActivity implements View.OnClickLis
         workoutBase.execSQL("DELETE FROM tempsort"); //empties tempsort from any previous uses
         workoutBase.execSQL("INSERT INTO tempsort SELECT * FROM records"); //copies the contents of records table into tempsort
 
-        tableFirstCreate=true;
+
         loadActivity("weightsort");
 
+    }
+
+    public void deleteRow(){
+        MyDatabase db = new MyDatabase(this);
+        workoutBase = db.getWritableDatabase();
+
+
+
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        final EditText input = new EditText(this);
+        input.setInputType(InputType.TYPE_CLASS_NUMBER);
+        builder.setView(input);
+        builder.setMessage("Enter the number of the row to delete:");
+        builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener(){
+            public void onClick(DialogInterface dialog, int id){
+                int inputRow;
+                int fixIndexCounter = 0;
+
+                Cursor c = workoutBase.rawQuery("SELECT * FROM records", null);
+                if(c!=null && c.getCount()>0 && (input.getText().toString().equals("")==false)){
+
+                    inputRow = Integer.parseInt(input.getText().toString());
+                    workoutBase.execSQL("DELETE FROM records WHERE id = " + inputRow);
+                    fixIndexCounter = c.getCount() - inputRow + 1;
+                    while (fixIndexCounter>0){
+                        workoutBase.execSQL("UPDATE records SET id=" + (inputRow-1) + " WHERE id=" + (inputRow));
+                        fixIndexCounter--;
+                        inputRow++;
+                    }
+                    loadActivity("records");
+                }
+
+            }
+        } );
+
+        builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                // User cancelled the dialog
+            }
+        });
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
     }
 
     @Override
@@ -199,8 +244,7 @@ public class ReviewActivity extends AppCompatActivity implements View.OnClickLis
                     //Deletes all rows from the records table
                     //resets the header checker and calls method to recreate the table
                     workoutBase.execSQL("DELETE FROM records");
-                    workoutBase.execSQL("UPDATE SQLITE_SEQUENCE SET SEQ=0 WHERE NAME='records'");
-                    tableFirstCreate=true;
+//                    workoutBase.execSQL("UPDATE SQLITE_SEQUENCE SET SEQ=0 WHERE NAME='records'");
                     loadActivity("records");
 
                 }
@@ -209,6 +253,12 @@ public class ReviewActivity extends AppCompatActivity implements View.OnClickLis
             builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
                 public void onClick(DialogInterface dialog, int id) {
                     // User cancelled the dialog
+                }
+            });
+
+            builder.setNeutralButton("Delete Row", new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int id) {
+                    deleteRow();
                 }
             });
 
