@@ -30,7 +30,7 @@ public class WorkoutActivity extends AppCompatActivity implements OnClickListene
     public String yearString;
     public String dateString;
     public String workout;
-    public String weight;
+    public int weight;
     public String reps;
     public String indexString;
 
@@ -75,15 +75,17 @@ public class WorkoutActivity extends AppCompatActivity implements OnClickListene
 
     }
 
-    public void updateDB(int id, String d, String wrk, String wght, String rps){
+    public void updateDB(int yr, int mo, int dy, String dt, String wrk, int wght, String rps){
 
 
 
 
 
         ContentValues insertValues = new ContentValues();
-        insertValues.put("id", id);
-        insertValues.put("date", d);
+        insertValues.put("year", yr);
+        insertValues.put("month", mo);
+        insertValues.put("day", dy);
+        insertValues.put("date", dt);
         insertValues.put("workout", wrk);
         insertValues.put("weight", wght);
         insertValues.put("reps", rps);
@@ -121,32 +123,33 @@ public class WorkoutActivity extends AppCompatActivity implements OnClickListene
 
 
             workout = workoutEdit.getText().toString();
-            weight = weightEdit.getText().toString();
             reps = repsEdit.getText().toString();
 
-            if(weight.equals("")){
-                weight = "0";
+
+            //checks if weight or reps box is empty
+            //if empty, sets the vars to 0
+            //otherwise, sets to contents of box
+            if((weightEdit.getText().toString()).equals("")){
+                weight = 0;
+            }
+            else{
+                weight = Integer.parseInt(weightEdit.getText().toString());
+            }
+            if((repsEdit.getText().toString()).equals("")){
+                reps = "0";
+            }
+            else{
+                reps = repsEdit.getText().toString();
             }
 
             checkLength(workout);
-            checkLength(weight);
+            checkLength(weightEdit.getText().toString());
             checkLength(reps);
 
-            Cursor c = workoutBase.rawQuery("SELECT * FROM records", null);
-            if (c!=null && c.getCount()>0) {
-                c.moveToLast();
-                indexString = c.getString(c.getColumnIndex("id"));
-                index = Integer.parseInt(indexString);
-                index++;
-            }
-            else{
-                index = 1;
-            }
-
-
+            //checks to make sure entries aren't too long before updating the db
             if(tooLong == false) {
 
-                updateDB(index, dateString, workout, weight, reps);
+                updateDB(year, monthNum, day, dateString, workout, weight, reps);
 
 
                 CharSequence text = "Workout saved!";
@@ -161,6 +164,7 @@ public class WorkoutActivity extends AppCompatActivity implements OnClickListene
                 toast.show();
             }
 
+            //resets editText boxes, focus set to top box
             tooLong = false;
             workoutEdit.setText("");
             weightEdit.setText("");

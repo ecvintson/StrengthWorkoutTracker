@@ -3,6 +3,10 @@
 //      move delete button from main to review
 //      add delete button function, delete a specific row
 //      implement buttons on bottom row to sort table by different stats
+//      refactor weightSort to use more efficient SQLite "ORDER BY"
+//          refactor how the id column is implemented (have column populated by a counter in loadActivity?)
+//          add month/day/year columns
+//          fully implement sortDate
 //      create personal library of sqlite functions from functions implemented here
 
 package com.example.evan.strengthworkouttracker;
@@ -25,12 +29,15 @@ public class ReviewActivity extends AppCompatActivity implements View.OnClickLis
 
     public SQLiteDatabase workoutBase;
     public String entry;
+    public int indexCounter;
     public boolean looper = true;
     public boolean tableFirstCreate = true;
 
 
     public Button weightSortButton;
+    public Button dateSortButton;
     public Button deleteButton;
+
 
 
 
@@ -40,6 +47,8 @@ public class ReviewActivity extends AppCompatActivity implements View.OnClickLis
         setContentView(R.layout.activity_review);
         weightSortButton = (Button)findViewById(R.id.weightSortButton);
         weightSortButton.setOnClickListener(this);
+        dateSortButton = (Button)findViewById(R.id.dateSortButton);
+        dateSortButton.setOnClickListener(this);
         deleteButton = (Button)findViewById(R.id.deleteButton);
         deleteButton.setOnClickListener(this);
 
@@ -48,24 +57,7 @@ public class ReviewActivity extends AppCompatActivity implements View.OnClickLis
 
     }
 
-    public void updateDB(int id, String d, String wrk, String wght, String rps, String tableName){
 
-
-
-
-
-        ContentValues insertValues = new ContentValues();
-        insertValues.put("id", id);
-        insertValues.put("date", d);
-        insertValues.put("workout", wrk);
-        insertValues.put("weight", wght);
-        insertValues.put("reps", rps);
-
-
-
-        workoutBase.insert(tableName, null, insertValues);
-
-    }
 
     private void loadActivity(String pickTable){
 
@@ -85,7 +77,9 @@ public class ReviewActivity extends AppCompatActivity implements View.OnClickLis
         switch (pickTable){
             case "records": c = workoutBase.rawQuery("SELECT * FROM records", null);
                 break;
-            case "weightsort": c = workoutBase.rawQuery("SELECT * FROM weightsort", null);
+            case "weightsort": c = workoutBase.rawQuery("SELECT * FROM tempsort ORDER BY weight DESC", null);
+                break;
+            case "datesort": c = workoutBase.rawQuery("SELECT * FROM tempsort ORDER BY weight DESC", null);
                 break;
             default: c = workoutBase.rawQuery("SELECT * FROM records", null);
                 break;
@@ -123,7 +117,7 @@ public class ReviewActivity extends AppCompatActivity implements View.OnClickLis
         //add each textview to the new row
         //add the row to the table
         //loop until all entries finished
-
+        indexCounter = 1;
         if(c!=null && c.getCount()>0) {
             c.moveToFirst();
             while (looper) {
@@ -134,13 +128,13 @@ public class ReviewActivity extends AppCompatActivity implements View.OnClickLis
                 TextView t4 = new TextView(this);
                 TextView t5 = new TextView(this);
 
-                    entry = c.getString(c.getColumnIndex("id"));
+                    entry = Integer.toString(c.getInt(c.getColumnIndex("id")));
                     t1.setText(entry);
                     entry = c.getString(c.getColumnIndex("date"));
                     t2.setText(entry);
                     entry = c.getString(c.getColumnIndex("workout"));
                     t3.setText(entry);
-                    entry = c.getString(c.getColumnIndex("weight"));
+                    entry = Integer.toString(c.getInt(c.getColumnIndex("weight")));
                     t4.setText(entry);
                     entry = c.getString(c.getColumnIndex("reps"));
                     t5.setText(entry);
@@ -154,7 +148,7 @@ public class ReviewActivity extends AppCompatActivity implements View.OnClickLis
                     if (c.isLast()) {
                         looper = false;
                     } else {
-                        //                    index++;
+                        indexCounter++;
                         c.moveToNext();
                     }
 
@@ -164,72 +158,29 @@ public class ReviewActivity extends AppCompatActivity implements View.OnClickLis
         }
     }
 
-    public void sortWeight(){
-        boolean swLooper = true;
-        boolean topLooper = true;
-        String getWeightString;
-        int getWeight;
-
-        int newID = 1;
-        int maxIDInt = 0;
-        int lastWeight = 0;
-
+    public void sortDate(){
 
         MyDatabase db = new MyDatabase(this);
         workoutBase = db.getWritableDatabase();
 
         workoutBase.execSQL("DELETE FROM tempsort"); //empties tempsort from any previous uses
-        workoutBase.execSQL("DELETE FROM weightsort"); //empties weightsort from any previous uses
         workoutBase.execSQL("INSERT INTO tempsort SELECT * FROM records"); //copies the contents of records table into tempsort
 
+        tableFirstCreate=true;
+        loadActivity("tempsort");
+    }
+
+    public void sortWeight(){
+
+        MyDatabase db = new MyDatabase(this);
+        workoutBase = db.getWritableDatabase();
 
 
-        while(topLooper) {
-            Cursor tempC = workoutBase.rawQuery("SELECT * FROM tempsort", null);
-            //inner loop, runs through the tempsort table, finds the highest
-            //weight, adds that row to weightsort, deletes the row from tempsort
-            tempC.moveToFirst();
-            while (swLooper) {
-                getWeightString = tempC.getString(tempC.getColumnIndex("weight"));  //grabs the weight column as a string
-                getWeight = Integer.parseInt(getWeightString); //converts it to an int
-                if (getWeight >= lastWeight) { //if weight of current index is greater than the previous
-                    lastWeight = getWeight;
-                    maxIDInt = tempC.getInt(tempC.getColumnIndex("id")); //the max ID is set to this current index
-                    //maxIDInt = Integer.parseInt(maxID); //and changed to an integer
+        workoutBase.execSQL("DELETE FROM tempsort"); //empties tempsort from any previous uses
+        workoutBase.execSQL("INSERT INTO tempsort SELECT * FROM records"); //copies the contents of records table into tempsort
 
-                }
-                if (tempC.isLast()) { //if the cursor is at the end of this run through
-                    swLooper = false; //reset the inner looper
-
-
-                    tempC = workoutBase.rawQuery("SELECT * FROM tempsort WHERE id= " + maxIDInt, null); //make a new cursor, consisting of only the row matching the ID of the current maxweight
-                    tempC.moveToFirst(); //initialize the cursor to the only row
-                    //run updateDB, with all the values from the current row, and whatever newID is currently incremented to
-                    updateDB(newID, tempC.getString(tempC.getColumnIndex("date")), tempC.getString(tempC.getColumnIndex("workout")), tempC.getString(tempC.getColumnIndex("weight")), tempC.getString(tempC.getColumnIndex("reps")), "weightsort");
-                    tempC = workoutBase.rawQuery("SELECT * FROM tempsort", null); //renew the cursor to include the entire tempsort table
-                    workoutBase.execSQL("DELETE FROM tempsort WHERE id = " + maxIDInt); //and drop that row from the temp table
-                    newID++;
-                }
-                else{ //if not at the end yet, move cursor and loop again
-                    tempC.moveToNext();
-                }
-            }
-            tempC = workoutBase.rawQuery("SELECT * FROM tempsort", null); //refreshes the cursor before checking if the table is empty
-            if (tempC==null || tempC.getCount()==0) {
-                //checks to see if all rows have been removed from tempsort
-                //if so, ends the top loop, and calls loadActivity
-                topLooper = false;
-                tableFirstCreate=true;
-                loadActivity("weightsort");
-            }
-            else{ //if not finished, reset all counters and looper
-                swLooper=true;
-                getWeight = 0;
-                lastWeight=0;
-                //maxID = "";
-                maxIDInt = 0;
-            }
-        }
+        tableFirstCreate=true;
+        loadActivity("weightsort");
 
     }
 
@@ -239,6 +190,9 @@ public class ReviewActivity extends AppCompatActivity implements View.OnClickLis
             sortWeight();
 
         }
+        else if (v==dateSortButton){
+            sortDate();
+        }
         else if (v==deleteButton){
             MyDatabase db = new MyDatabase(this);
             workoutBase = db.getWritableDatabase();
@@ -247,9 +201,11 @@ public class ReviewActivity extends AppCompatActivity implements View.OnClickLis
             builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener(){
                 public void onClick(DialogInterface dialog, int id){
                     //clicked OK
+                    //resets the id autoincrementer
                     //Deletes all rows from the records table
                     //resets the header checker and calls method to recreate the table
                     workoutBase.execSQL("DELETE FROM records");
+                    workoutBase.execSQL("UPDATE SQLITE_SEQUENCE SET SEQ=0 WHERE NAME='records'");
                     tableFirstCreate=true;
                     loadActivity("records");
 

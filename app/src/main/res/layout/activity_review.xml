@@ -83,4 +83,13 @@
         android:layout_toLeftOf="@+id/weightSortButton"
         android:layout_toStartOf="@+id/weightSortButton" />
 
+    <Button
+        android:text="date"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/dateSortButton"
+        android:layout_alignParentBottom="true"
+        android:layout_toRightOf="@+id/weightSortButton"
+        android:layout_toEndOf="@+id/weightSortButton" />
+
 </RelativeLayout>
