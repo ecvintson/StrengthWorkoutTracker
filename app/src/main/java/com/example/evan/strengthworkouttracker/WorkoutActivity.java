@@ -24,7 +24,7 @@ public class WorkoutActivity extends AppCompatActivity implements OnClickListene
     public int monthNum;
     public int day;
     public int year;
-    public int index;
+    public int dateSort;
     public String monthString;
     public String dayString;
     public String yearString;
@@ -75,7 +75,7 @@ public class WorkoutActivity extends AppCompatActivity implements OnClickListene
 
     }
 
-    public void updateDB(int yr, int mo, int dy, String dt, String wrk, int wght, String rps){
+    public void updateDB(int yr, int mo, int dy, String dt, String wrk, int wght, String rps, int dtsrt){
 
 
 
@@ -89,6 +89,7 @@ public class WorkoutActivity extends AppCompatActivity implements OnClickListene
         insertValues.put("workout", wrk);
         insertValues.put("weight", wght);
         insertValues.put("reps", rps);
+        insertValues.put("sortdate", dtsrt);
 
 
 
@@ -112,12 +113,23 @@ public class WorkoutActivity extends AppCompatActivity implements OnClickListene
             year = datePick.getYear();
 
             monthNum++;
-            year = year - 2000;
+
 
             monthString = Integer.toString(monthNum);
+            if(monthString.length()<2){
+                monthString = ("0" + monthString);
+            }
             dayString = Integer.toString(day);
+            if(dayString.length()<2){
+                dayString = ("0" + dayString);
+            }
             yearString = Integer.toString(year);
 
+
+
+            dateString = (yearString + monthString + dayString );
+            dateSort = Integer.parseInt(dateString);
+            year = year - 2000;
             dateString = (monthString + "/" + dayString + "/" + yearString);
 
 
@@ -149,7 +161,7 @@ public class WorkoutActivity extends AppCompatActivity implements OnClickListene
             //checks to make sure entries aren't too long before updating the db
             if(tooLong == false) {
 
-                updateDB(year, monthNum, day, dateString, workout, weight, reps);
+                updateDB(year, monthNum, day, dateString, workout, weight, reps, dateSort);
 
 
                 CharSequence text = "Workout saved!";

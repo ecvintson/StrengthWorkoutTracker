@@ -1,12 +1,6 @@
 //to do:
 //      implement default workouts sorted by date
-//      move delete button from main to review
 //      add delete button function, delete a specific row
-//      implement buttons on bottom row to sort table by different stats
-//      refactor weightSort to use more efficient SQLite "ORDER BY"
-//          refactor how the id column is implemented (have column populated by a counter in loadActivity?)
-//          add month/day/year columns
-//          fully implement sortDate
 //      create personal library of sqlite functions from functions implemented here
 
 package com.example.evan.strengthworkouttracker;
@@ -79,7 +73,7 @@ public class ReviewActivity extends AppCompatActivity implements View.OnClickLis
                 break;
             case "weightsort": c = workoutBase.rawQuery("SELECT * FROM tempsort ORDER BY weight DESC", null);
                 break;
-            case "datesort": c = workoutBase.rawQuery("SELECT * FROM tempsort ORDER BY weight DESC", null);
+            case "datesort": c = workoutBase.rawQuery("SELECT * FROM tempsort ORDER BY sortdate DESC", null);
                 break;
             default: c = workoutBase.rawQuery("SELECT * FROM records", null);
                 break;
@@ -167,7 +161,7 @@ public class ReviewActivity extends AppCompatActivity implements View.OnClickLis
         workoutBase.execSQL("INSERT INTO tempsort SELECT * FROM records"); //copies the contents of records table into tempsort
 
         tableFirstCreate=true;
-        loadActivity("tempsort");
+        loadActivity("datesort");
     }
 
     public void sortWeight(){
