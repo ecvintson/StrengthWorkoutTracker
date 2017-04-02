@@ -1,5 +1,15 @@
 //to do:
 //      create personal library of sqlite functions from functions implemented here
+//  Redesigned the New Workout activity.
+//          added a field for sets, and same column in db
+//          added a totalreps column in db
+//          changed the Workout name field to a dropdown list
+//          removed the calendar. can now change date by tapping on the date field
+//  Redesigned the Review activity
+//          Changed reps column to sets
+//          displays in "sets"x"reps" format
+//          Added a graph
+//          Added button to sort graph my different metrics
 
 package com.example.evan.strengthworkouttracker;
 
@@ -7,20 +17,29 @@ import android.content.ContentValues;
 import android.content.DialogInterface;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.provider.ContactsContract;
 import android.support.annotation.IntegerRes;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.RecyclerView;
 import android.text.InputType;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Spinner;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
 
-public class ReviewActivity extends AppCompatActivity implements View.OnClickListener {
+import com.jjoe64.graphview.GraphView;
+import com.jjoe64.graphview.series.DataPoint;
+import com.jjoe64.graphview.series.LineGraphSeries;
+
+public class ReviewActivity extends AppCompatActivity implements View.OnClickListener{
 
     public SQLiteDatabase workoutBase;
     public String entry;
@@ -33,6 +52,7 @@ public class ReviewActivity extends AppCompatActivity implements View.OnClickLis
     public Button weightSortButton;
     public Button dateSortButton;
     public Button deleteButton;
+    public Spinner graphDropdown;
 
 
 
@@ -47,17 +67,75 @@ public class ReviewActivity extends AppCompatActivity implements View.OnClickLis
         dateSortButton.setOnClickListener(this);
         deleteButton = (Button)findViewById(R.id.deleteButton);
         deleteButton.setOnClickListener(this);
+        graphDropdown = (Spinner)findViewById(R.id.graphSpinner);
+        graphDropdown.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener(){
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id){
+                createChart(graphDropdown.getSelectedItem().toString());
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent){
+
+            }
+        });
 
         loadActivity("records");
+
+
+        String[] workoutList = new String[]{"Select Workout", "Pushups", "Situps", "Benchpress", "Squats", "Deadlifts"};
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, workoutList);
+        graphDropdown.setAdapter(adapter);
 
 
     }
 
 
+    //organizes the records table, selecting only the weight column from specific workout
+    //makes a DataPoint list, traversing through the table and assigning the weight value
+    //returns when called by createChart
+    private DataPoint[] generateData(String selection){
+        MyDatabase db = new MyDatabase(this);
+        workoutBase = db.getWritableDatabase();
+        String sortMetric;
+        if(selection.equals("Pushups") || selection.equals("Situps")){
+            sortMetric = "totalreps";
+        }
+        else{
+            sortMetric = "weight";
+        }
+
+        Cursor c = workoutBase.rawQuery("SELECT " + sortMetric + ", sortdate FROM records WHERE workout='" + selection +  "' ORDER BY sortdate ASC", null);
+        int listLength = c.getCount();
+        c.moveToFirst();
+
+        DataPoint[] values = new DataPoint[listLength];
+        for (int i=0; i<listLength; i++){
+            DataPoint v = new DataPoint(i+1, c.getInt(c.getColumnIndex(sortMetric)));
+            values[i] = v;
+            c.moveToNext();
+        }
+        return values;
+    }
+
+    //creates the graph, takes param from the graphDropdown spinner
+    private void createChart(String selection){
+
+
+        GraphView graph = (GraphView)findViewById(R.id.graph);
+        graph.removeAllSeries();
+        if(selection.equals("Select Workout")==false) {
+            LineGraphSeries<DataPoint> series = new LineGraphSeries<>(generateData(selection));
+            graph.addSeries(series);
+
+
+        }
+    }
+
 
     private void loadActivity(String pickTable){
 
-        //this method creates and populates the table
+        //creates and populates the table
 
 
         TableLayout table = (TableLayout) findViewById(R.id.TableLayout01);
@@ -97,7 +175,7 @@ public class ReviewActivity extends AppCompatActivity implements View.OnClickLis
             ft2.setText("Date");
             ft3.setText("Workout");
             ft4.setText("Weight");
-            ft5.setText("Reps");
+            ft5.setText("Sets");
             frow.addView(ft1);
             frow.addView(ft2);
             frow.addView(ft3);
@@ -132,7 +210,7 @@ public class ReviewActivity extends AppCompatActivity implements View.OnClickLis
                     t3.setText(entry);
                     entry = Integer.toString(c.getInt(c.getColumnIndex("weight")));
                     t4.setText(entry);
-                    entry = c.getString(c.getColumnIndex("reps"));
+                    entry = (Integer.toString(c.getInt(c.getColumnIndex("sets"))) + "x" + c.getString(c.getColumnIndex("reps")));
                     t5.setText(entry);
                     row.addView(t1);
                     row.addView(t2);
@@ -208,6 +286,8 @@ public class ReviewActivity extends AppCompatActivity implements View.OnClickLis
                         inputRow++;
                     }
                     loadActivity("records");
+                    graphDropdown.setSelection(0);
+                    createChart(graphDropdown.getSelectedItem().toString());
                 }
 
             }
@@ -240,12 +320,15 @@ public class ReviewActivity extends AppCompatActivity implements View.OnClickLis
             builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener(){
                 public void onClick(DialogInterface dialog, int id){
                     //clicked OK
-                    //resets the id autoincrementer
                     //Deletes all rows from the records table
-                    //resets the header checker and calls method to recreate the table
+                    //calls method to recreate the table
+                    //resets the graph
                     workoutBase.execSQL("DELETE FROM records");
-//                    workoutBase.execSQL("UPDATE SQLITE_SEQUENCE SET SEQ=0 WHERE NAME='records'");
                     loadActivity("records");
+                    graphDropdown.setSelection(0);
+                    createChart(graphDropdown.getSelectedItem().toString());
+
+
 
                 }
             } );
@@ -268,4 +351,5 @@ public class ReviewActivity extends AppCompatActivity implements View.OnClickLis
 
         }
     }
+
 }
