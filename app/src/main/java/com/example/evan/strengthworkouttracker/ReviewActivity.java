@@ -1,15 +1,5 @@
 //to do:
-//      create personal library of sqlite functions from functions implemented here
-//  Redesigned the New Workout activity.
-//          added a field for sets, and same column in db
-//          added a totalreps column in db
-//          changed the Workout name field to a dropdown list
-//          removed the calendar. can now change date by tapping on the date field
-//  Redesigned the Review activity
-//          Changed reps column to sets
-//          displays in "sets"x"reps" format
-//          Added a graph
-//          Added button to sort graph my different metrics
+//     Add funtions to DatabaseHelper to simplify things
 
 package com.example.evan.strengthworkouttracker;
 
@@ -43,8 +33,6 @@ public class ReviewActivity extends AppCompatActivity implements View.OnClickLis
 
     public SQLiteDatabase workoutBase;
     public String entry;
-    public int cIndex;
-    public int index;
     public int indexCounter;
     public boolean looper = true;
 
@@ -95,7 +83,7 @@ public class ReviewActivity extends AppCompatActivity implements View.OnClickLis
     //makes a DataPoint list, traversing through the table and assigning the weight value
     //returns when called by createChart
     private DataPoint[] generateData(String selection){
-        MyDatabase db = new MyDatabase(this);
+        DatabaseHelper db = new DatabaseHelper(this);
         workoutBase = db.getWritableDatabase();
         String sortMetric;
         if(selection.equals("Pushups") || selection.equals("Situps")){
@@ -143,7 +131,7 @@ public class ReviewActivity extends AppCompatActivity implements View.OnClickLis
         looper = true;
 
         //Set up database
-        MyDatabase db = new MyDatabase(this);
+        DatabaseHelper db = new DatabaseHelper(this);
         workoutBase = db.getWritableDatabase();
 
         //Establish cursor and selects table based on the arg
@@ -234,7 +222,7 @@ public class ReviewActivity extends AppCompatActivity implements View.OnClickLis
 
     public void sortDate(){
 
-        MyDatabase db = new MyDatabase(this);
+        DatabaseHelper db = new DatabaseHelper(this);
         workoutBase = db.getWritableDatabase();
 
         workoutBase.execSQL("DELETE FROM tempsort"); //empties tempsort from any previous uses
@@ -245,7 +233,7 @@ public class ReviewActivity extends AppCompatActivity implements View.OnClickLis
 
     public void sortWeight(){
 
-        MyDatabase db = new MyDatabase(this);
+        DatabaseHelper db = new DatabaseHelper(this);
         workoutBase = db.getWritableDatabase();
 
 
@@ -258,7 +246,7 @@ public class ReviewActivity extends AppCompatActivity implements View.OnClickLis
     }
 
     public void deleteRow(){
-        MyDatabase db = new MyDatabase(this);
+        DatabaseHelper db = new DatabaseHelper(this);
         workoutBase = db.getWritableDatabase();
 
 
@@ -313,7 +301,7 @@ public class ReviewActivity extends AppCompatActivity implements View.OnClickLis
             sortDate();
         }
         else if (v==deleteButton){
-            MyDatabase db = new MyDatabase(this);
+            DatabaseHelper db = new DatabaseHelper(this);
             workoutBase = db.getWritableDatabase();
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setMessage("This will delete all workouts. Are you sure?");

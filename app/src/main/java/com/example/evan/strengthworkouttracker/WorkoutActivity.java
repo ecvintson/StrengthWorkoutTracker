@@ -4,6 +4,7 @@ import android.app.DatePickerDialog;
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.provider.ContactsContract;
 import android.support.annotation.IntegerRes;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -128,7 +129,7 @@ public class WorkoutActivity extends AppCompatActivity implements OnClickListene
          myLayout.requestFocus();
 
 
-        MyDatabase db = new MyDatabase(this);
+        DatabaseHelper db = new DatabaseHelper(this);
         workoutBase = db.getWritableDatabase();
         Cursor c = workoutBase.rawQuery("SELECT * FROM records", null);
         if(c!=null && c.getCount()>0){
@@ -146,30 +147,6 @@ public class WorkoutActivity extends AppCompatActivity implements OnClickListene
 
     }
 
-    public void updateDB(int id, int yr, int mo, int dy, String dt, String wrk, int wght, String rps, int dtsrt, int sts, int tReps){
-
-
-
-
-
-        ContentValues insertValues = new ContentValues();
-        insertValues.put("id", id);
-        insertValues.put("year", yr);
-        insertValues.put("month", mo);
-        insertValues.put("day", dy);
-        insertValues.put("date", dt);
-        insertValues.put("workout", wrk);
-        insertValues.put("weight", wght);
-        insertValues.put("reps", rps);
-        insertValues.put("sets", sts);
-        insertValues.put("sortdate", dtsrt);
-        insertValues.put("totalreps", tReps);
-
-
-
-        workoutBase.insert("records", null, insertValues);
-
-    }
 
     public void checkLength(String toCheck){
         strLength = toCheck.length();
@@ -234,7 +211,7 @@ public class WorkoutActivity extends AppCompatActivity implements OnClickListene
                 sets = Integer.parseInt(setsEdit.getText().toString());
             }
 
-//            checkLength(workout);
+
             checkLength(weightEdit.getText().toString());
             checkLength(reps);
             checkLength(Integer.toString(sets));
@@ -243,7 +220,9 @@ public class WorkoutActivity extends AppCompatActivity implements OnClickListene
             if(tooLong == false && workout.equals("Select Workout")==false) {
                 index++;
                 totalReps = Integer.parseInt(reps) * sets;
-                updateDB(index, year, monthNum, day, dateString, workout, weight, reps, dateSort, sets, totalReps);
+                DatabaseHelper db = new DatabaseHelper(this);
+                db.insertData(index, year, monthNum, day, dateString, workout, weight, reps, dateSort, sets, totalReps);
+
 
 
                 CharSequence text = "Workout saved!";
